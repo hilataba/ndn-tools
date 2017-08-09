@@ -79,6 +79,9 @@ private:
 
   void
   onFailure(const std::string& reason);
+  
+  void
+  onValidationFailure(const std::string& reason);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void

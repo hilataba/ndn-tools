@@ -56,7 +56,7 @@ Consumer::startPipeline(const Data& data)
 {
   m_validator.validate(data,
                        bind(&Consumer::onDataValidated, this, _1),
-                       bind(&Consumer::onFailure, this, _2));
+                       bind(&Consumer::onValidationFailure, this, _2));
 
   m_pipeline->run(data,
                   bind(&Consumer::onData, this, _1, _2),
@@ -68,7 +68,7 @@ Consumer::onData(const Interest& interest, const Data& data)
 {
   m_validator.validate(data,
                        bind(&Consumer::onDataValidated, this, _1),
-                       bind(&Consumer::onFailure, this, _2));
+                       bind(&Consumer::onValidationFailure, this, _2));
 }
 
 void
@@ -84,6 +84,13 @@ Consumer::onDataValidated(shared_ptr<const Data> data)
 
   m_bufferedData[getSegmentFromPacket(*data)] = data;
   writeInOrderData();
+}
+  
+void
+Consumer::onValidationFailure(const std::string& reason)
+{
+  if (m_isVerbose)
+    std::cerr << "Failed to validte" << std::endl;
 }
 
 void
