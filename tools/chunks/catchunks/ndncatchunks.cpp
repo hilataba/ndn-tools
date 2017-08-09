@@ -38,6 +38,7 @@
 #include "aimd-statistics-collector.hpp"
 
 #include <ndn-cxx/security/validator-null.hpp>
+#include <ndn-cxx/security/validator-config.hpp>
 #include <fstream>
 
 namespace ndn {
@@ -50,6 +51,7 @@ main(int argc, char** argv)
   Options options;
   std::string discoverType("iterative");
   std::string pipelineType("fixed");
+  std::string validatorConfigFile("");
   size_t maxPipelineSize(1);
   int maxRetriesAfterVersionFound(1);
   std::string uri;
@@ -75,6 +77,8 @@ main(int argc, char** argv)
                     "lifetime of expressed Interests, in milliseconds")
     ("retries,r",   po::value<int>(&options.maxRetriesOnTimeoutOrNack)->default_value(options.maxRetriesOnTimeoutOrNack),
                     "maximum number of retries in case of Nack or timeout (-1 = no limit)")
+    ("validator-config-file,c",  po::value<std::string>(&validatorConfigFile)->default_value(validatorConfigFile),
+     "path to validator configuration file; default is none")
     ("verbose,v",   po::bool_switch(&options.isVerbose), "turn on verbose output")
     ("version,V",   "print program version and exit")
     ;
@@ -266,14 +270,27 @@ main(int argc, char** argv)
       std::cerr << "ERROR: Interest pipeline type not valid" << std::endl;
       return 2;
     }
-
-    ValidatorNull validator;
-    Consumer consumer(validator, options.isVerbose);
-
-    BOOST_ASSERT(discover != nullptr);
-    BOOST_ASSERT(pipeline != nullptr);
-    consumer.run(std::move(discover), std::move(pipeline));
-    face.processEvents();
+      
+    if (validatorConfigFile == "") {
+      ValidatorNull validator;
+      Consumer consumer(validator, options.isVerbose);
+      
+      BOOST_ASSERT(discover != nullptr);
+      BOOST_ASSERT(pipeline != nullptr);
+      consumer.run(std::move(discover), std::move(pipeline));
+      face.processEvents();
+    }
+    else {
+      ValidatorConfig validator;
+      validator.load(validatorConfigFile);
+      
+      Consumer consumer(validator, options.isVerbose);
+      
+      BOOST_ASSERT(discover != nullptr);
+      BOOST_ASSERT(pipeline != nullptr);
+      consumer.run(std::move(discover), std::move(pipeline));
+      face.processEvents();
+    }
   }
   catch (const Consumer::ApplicationNackError& e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
